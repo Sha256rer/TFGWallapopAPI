@@ -70,11 +70,17 @@ price = driver.find_elements(By.XPATH, "//span[@class ='ItemCard__price ItemCard
 
 preciomedio = 0
 for i in range(price.__len__()):
-    f = float(Decimal(price[i].text.removesuffix(" €").replace(",", ".")))
+    if price[i].text.__contains__("."):
+     newstr = price[i].text.replace(".", "")
+
+     f = float(Decimal(newstr.replace(",", ".").removesuffix(" €")))
+     print(f)
+    #Para precios muy garndes
+    else:
+     f = float(Decimal(price[i].text.removesuffix(" €").replace(",", ".")))
     b : Busqueda= Busqueda(elements[i].text, f , "testusr")
     con.inserta(b)
-    preciomedio += Decimal(price[i].text.removesuffix(" €").replace(",", "."))
-
+    preciomedio += f
 rows =  con.selectall()
 for i in rows:
     print(i)
