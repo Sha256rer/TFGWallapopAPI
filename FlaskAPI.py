@@ -73,6 +73,16 @@ def busquedas_by_user(user : String):
 def buscar_producto(producto_p, user_p, order_p):
    # Aquí podrías pedir el nombre o pasarlo desde Flask
     resultados = run_scraper(producto_p, order_p, user_p)
+    busquedaproducto = []
+    busqueda = Busqueda(busqueda=producto_p)
+    dbalchemy.session.add(busqueda)
     dbalchemy.session.add_all(resultados)
+    dbalchemy.session.flush()
+    #Hacer flush para que se asigne el ID de busqueda y de resultados sin hacer commit completo
+    for prod in resultados:
+        curr = Busquedaproducto(productoid= prod.id, busquedaid = busqueda.id)
+        busquedaproducto.append(curr)
+    dbalchemy.session.add_all(busquedaproducto)
+
     dbalchemy.session.commit()
-    return {"rest": resultados}
+    return {"Insertado con exito"}
