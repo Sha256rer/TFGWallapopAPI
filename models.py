@@ -70,6 +70,7 @@ class Producto(Base):
     __tablename__  = 'producto'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    uuid: Mapped[str] = mapped_column(unique=True, nullable=False)
     nombre: Mapped[str] = mapped_column(Text)
     precio: Mapped[float] = mapped_column(Numeric)
 

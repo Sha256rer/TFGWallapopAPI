@@ -3,6 +3,7 @@ from typing import List
 import time
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -47,6 +48,12 @@ def select_product() -> str:
 def parse_price(text: str) -> float:
     cleaned = text.replace(".", "").replace(" €", "").replace(",", ".")
     return float(Decimal(cleaned))
+def parse_uuid(card: WebElement) -> str:
+    curr = card.get_attribute("href")
+    url = curr.rsplit("-", 1)
+
+    #mostramos solo el segundo element, id del producto
+    return str(url[1])
 
 # Lógica principal
 def run_scraper(producto: str, order: str, usuario: str) -> List[Busqueda]:
@@ -63,17 +70,19 @@ def run_scraper(producto: str, order: str, usuario: str) -> List[Busqueda]:
 
     click_cookies(driver)
     wait_for_cards(driver)
+    card = driver.find_elements(By.XPATH, "//a[contains(@class, 'ItemCard')]")
 
     titles = driver.find_elements(By.XPATH, "//p[@class='ItemCard__title my-1']")
     prices = driver.find_elements(By.XPATH, "//span[@class ='ItemCard__price ItemCard__price--bold']")
     #List[producto]
+
     resultados = []
     for i in range(min(len(titles), len(prices))):
         try:
             precio = parse_price(prices[i].text)
             titulo = titles[i].text
-
-            producto = Producto(nombre=titulo, precio=precio)
+            uuid = parse_uuid(card[i])
+            producto = Producto(nombre=titulo, precio=precio, uuid=uuid)
             resultados.append(producto)
         except Exception as e:
             print(f"Error al procesar resultado {i}: {e}")
@@ -89,7 +98,7 @@ if __name__ == "__main__":
     resultados = run_scraper(producto, orden, usuario)
 
     for r in resultados:
-        print(f"{r.nombre} - {r.precio}€")
+        print(f"{r.nombre} - {r.precio}€ - {r.uuid}")
 
 
 
