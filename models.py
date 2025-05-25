@@ -1,6 +1,7 @@
+from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import Column, ForeignKey, Integer, Numeric, Text
+from sqlalchemy import Column, ForeignKey, Integer, Numeric, Text, DateTime
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 from sqlalchemy.orm.base import Mapped
 
@@ -18,6 +19,7 @@ class Busquedausuario(Base):
     busquedaid: Mapped[int] = mapped_column(ForeignKey("busqueda.id"), primary_key=True)
     userid : Mapped[int] = mapped_column(ForeignKey("user.id"), primary_key=True)
     frequency: Mapped[int] = mapped_column(Integer)
+    last_updated: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     # Relación hacia Busqueda
     busqueda: Mapped["Busqueda"] = relationship(back_populates="usuario_relaciones")

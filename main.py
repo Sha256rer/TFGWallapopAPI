@@ -35,6 +35,9 @@ def wait_for_cards(driver):
             EC.presence_of_element_located((By.XPATH, "//a[@class='ItemCardList__item']")))
     except TimeoutException:
         print("Los productos tardaron demasiado en cargar.")
+def order_by_auto(order: int) -> str:
+    options = ["most_relevance", "newest", "closest", "price_low_to_high", "price_high_to_low"]
+    return options[order]
 
 def order_by() -> str:
     options = ["", "newest", "closest", "price_low_to_high", "price_high_to_low"]
@@ -56,9 +59,9 @@ def parse_uuid(card: WebElement) -> str:
     return str(url[1])
 
 # Lógica principal
-def run_scraper(producto: str, order: str, usuario: str) -> List[Busqueda]:
+def run_scraper(producto: str, order: int) -> List[Busqueda]:
     driver = webdriver.Chrome(options=set_options())
-    url = f"https://es.wallapop.com/app/search?filters_source=search_box&keywords={producto}&longitude=-3.69196&latitude=40.41956&order_by={order}"
+    url = f"https://es.wallapop.com/app/search?filters_source=search_box&keywords={producto}&longitude=-3.69196&latitude=40.41956&order_by={order_by_auto(order)}"
     driver.get(url)
 
     try:
