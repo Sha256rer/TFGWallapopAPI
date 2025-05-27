@@ -3,6 +3,7 @@ from operator import truediv
 import sqlalchemy
 from flask import Flask, render_template
 from flask import jsonify
+from flask.cli import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine, String, Boolean
 from sqlalchemy.dialects.postgresql import insert
@@ -15,6 +16,8 @@ from sqlalchemy.orm import sessionmaker
 from enum import Enum
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from dotenv import load_dotenv
+import os
 
 
 
@@ -26,14 +29,16 @@ class EstadoBusqueda(str, Enum):
 
 
 app = Flask(__name__)
-user = "postgres"
-host = "db.ivzfgdyucmzelusjtuyn.supabase.co"
-port = 5432
-database = "postgres"
-password = "4bfjDvxScyfNnFrh"
+load_dotenv("connection.env")
+USER = os.getenv("DB_USER")
+PASSWORD = os.getenv("DB_PASSWORD")
+HOST = os.getenv("DB_HOST")
+PORT = os.getenv("DB_PORT")
+DBNAME = os.getenv("DB_NAME")
+
 
 app.config[
-    'SQLALCHEMY_DATABASE_URI'] = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}?sslmode=require"
+    'SQLALCHEMY_DATABASE_URI'] = f"postgresql+psycopg2://{USER}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}?sslmode=require"
 dbalchemy = SQLAlchemy(app)
 
 
@@ -64,8 +69,30 @@ def starting_page():
     #Necesitas hacer carpeta templates y meter las html files alli
     return render_template('index.html')
 
+@app.route("/Busquedas/Update/All", methods=['GET'])
+def get_busquedas_to_update():
+    last_updates = dbalchemy.session.query(Busqueda).all()
+    now = datetime.now(ZoneInfo("Europe/Madrid"))
+    result = []
+    for b in last_updates:
+        if b.last_updated and b.shortest_frequency:
+            # Diferencia entre el momento actual y la ultima actualización
+            diferencia = now - b.last_updated
+            diferencia_en_int = int(diferencia.total_seconds() // 60)
+            # Si la frecuencia de actualización mas corta es mas pequeña que la diferencia entre ahora y la última actualizacion
+            #Debemos actualizar de nuevo
+            print(diferencia_en_int)
+            print(b.shortest_frequency)
+            if b.shortest_frequency < diferencia_en_int:
+                update_productos(b.busqueda)
+                result.append(f"Busqueda ID {b.id} - Time difference: {diferencia}")
+        else:
+            print("last_updated o shortest_frequency son null")
+    return result
+
 @app.route("/Users/Busquedas/Update/<busqueda_p>", methods=['POST'])
 def update_productos(busqueda_p : str):
+    now = datetime.now(ZoneInfo("Europe/Madrid"))
     productos_actuales = get_productos_by_busqueda(busqueda_p)
     if not productos_actuales:
         return "La búsqueda no existe"
@@ -78,6 +105,7 @@ def update_productos(busqueda_p : str):
         curr = Busquedaproducto(productoid=pid, busquedaid=busqueda.id)
         busquedaproducto.append(curr)
     dbalchemy.session.add_all(busquedaproducto)
+    set_updated_busqueda(busqueda_p, now)
     dbalchemy.session.commit()
 
     actual_uuids = {p.uuid for p in productos_actuales}
@@ -160,8 +188,8 @@ def buscar_producto(producto_p, order_p, user_p):
                 curr = Busquedaproducto(productoid=pid, busquedaid=busqueda.id)
                 busquedaproducto.append(curr)
             dbalchemy.session.add_all(busquedaproducto)
-
-            asociar_busquedausuario(producto_p, insert_user, now)
+            set_updated_busqueda(producto_p, now)
+            asociar_busquedausuario(producto_p, insert_user)
             dbalchemy.session.commit()
             return "Insertado con exito"
         elif estado_busqueda ==  EstadoBusqueda.YA_ASOCIADA:
@@ -169,7 +197,8 @@ def buscar_producto(producto_p, order_p, user_p):
             return "Ya has asociado esta búsqueda"
         # Asociamos una busqueda ya existente al usuario
         elif estado_busqueda == EstadoBusqueda.NO_ASOCIADA:
-            asociar_busquedausuario(producto_p, insert_user, now)
+            set_updated_busqueda(producto_p, now)
+            asociar_busquedausuario(producto_p, insert_user)
             dbalchemy.session.commit()
             return "Búsqueda asociada con éxito"
 
@@ -217,10 +246,16 @@ def process_productos(productos):
     # Devuelve los IDs procesados
     return producto_ids
 
-def asociar_busquedausuario(producto_p, insert_user, curr_time):
+def asociar_busquedausuario(producto_p, insert_user):
     busqueda = dbalchemy.session.query(Busqueda).filter(Busqueda.busqueda == producto_p).first()
-    newbusquedausuario = Busquedausuario(busquedaid=busqueda.id, userid=insert_user.id, last_updated= curr_time)
+    newbusquedausuario = Busquedausuario(busquedaid=busqueda.id, userid=insert_user.id)
     dbalchemy.session.add(newbusquedausuario)
+
+def set_updated_busqueda(producto_p, curr_time):
+    busqueda = dbalchemy.session.query(Busqueda).filter(Busqueda.busqueda == producto_p).first()
+    if busqueda:
+        busqueda.last_updated = curr_time   # Example update logic
+        dbalchemy.session.commit()
 
 def get_busquedas_by_user(user_p: str):
     user = get_user(user_p)

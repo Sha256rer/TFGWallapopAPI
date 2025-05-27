@@ -15,7 +15,7 @@ from models import Busqueda, Producto
 # Configuración Selenium
 def set_options():
     options = Options()
-    options.headless = True
+    options.add_argument("--headless=new")
     options.add_argument("--window-size=1920,1080")
     options.add_argument("start-maximized")
     prefs = {"profile.managed_default_content_settings.images": 2}
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     producto = select_product()
     orden = order_by()
     usuario = "testusr"  # Aquí podrías pedir el nombre o pasarlo desde Flask
-    resultados = run_scraper(producto, orden, usuario)
+    resultados = run_scraper(producto, 1)
 
     for r in resultados:
         print(f"{r.nombre} - {r.precio}€ - {r.uuid}")

@@ -19,7 +19,7 @@ class Busquedausuario(Base):
     busquedaid: Mapped[int] = mapped_column(ForeignKey("busqueda.id"), primary_key=True)
     userid : Mapped[int] = mapped_column(ForeignKey("user.id"), primary_key=True)
     frequency: Mapped[int] = mapped_column(Integer)
-    last_updated: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
 
     # Relación hacia Busqueda
     busqueda: Mapped["Busqueda"] = relationship(back_populates="usuario_relaciones")
@@ -46,8 +46,9 @@ class Busqueda(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, unique=True)
     busqueda: Mapped[str] = mapped_column(Text)
+    last_updated: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     media: Mapped[float] = mapped_column(Numeric)
-
+    shortest_frequency: Mapped[int] = mapped_column(Integer)
     # back_populates apunta a busqueda en Busquedausuario
     usuario_relaciones: Mapped[List["Busquedausuario"]] = relationship(
         "Busquedausuario", back_populates='busqueda'
