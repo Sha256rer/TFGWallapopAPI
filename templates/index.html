@@ -1,69 +1,102 @@
 <!doctype html>
-<html lang="en">
-    <head>
-        <title>Title</title>
-        <!-- Required meta tags -->
-        <meta charset="utf-8" />
-        <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1, shrink-to-fit=no"
-        />
-
-        <!-- Bootstrap CSS v5.2.1 -->
-        <link
-            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
-            rel="stylesheet"
-            integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
-            crossorigin="anonymous"
-        />
-    </head>
-
-    <body>
-        <header>
-            <!-- place navbar here -->
-        </header>
-        <main>
-            <div class="container w-50 ">
-            
-            <div class="table-responsive-md position-absolute top-50 start-50 translate-middle ">
-                <table class="table table-primary ">
-                    <thead>
-                        <tr>
-                            <th scope="col">Dirección<nav></nav></th>
-                            <th scope="col">Respuesta</th>
-                   
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="">
-                            <td scope="row">/Busqueda</td>
-                            <td>Encuentra todas las busquedas</td>
-                       
-                        </tr>
-                        <tr class="">
-                            <td scope="row">/Busqueda/id</td>
-                            <td>Borra todos las busquedas de un usario</td>
-                    
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        </main>
-        <footer>
-            <!-- place footer here -->
-        </footer>
-        <!-- Bootstrap JavaScript Libraries -->
-        <script
-            src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
-            integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
-            crossorigin="anonymous"
-        ></script>
-
-        <script
-            src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"
-            integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+"
-            crossorigin="anonymous"
-        ></script>
-    </body>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>API Flask - Rutas disponibles</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+    crossorigin="anonymous"
+  />
+</head>
+<body>
+  <main class="container my-5">
+    <h1 class="text-center mb-4">Rutas de la API Flask</h1>
+    <div class="table-responsive">
+      <table class="table table-striped table-bordered align-middle">
+        <thead class="table-dark">
+          <tr>
+            <th>Ruta</th>
+            <th>Método</th>
+            <th>Descripción</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>/Users/Updates</td>
+            <td>GET</td>
+            <td>Obtiene usuarios con búsquedas a notificar según su frecuencia.</td>
+          </tr>
+          <tr>
+            <td>/Users/Updates/&lt;busquedausuario_id&gt;</td>
+            <td>GET</td>
+            <td>Obtiene productos nuevos desde la última notificación de una búsqueda usuario específica.</td>
+          </tr>
+          <tr>
+            <td>/Testcon</td>
+            <td>GET</td>
+            <td>Comprueba la conexión con la base de datos.</td>
+          </tr>
+          <tr>
+            <td>/Busquedas</td>
+            <td>GET</td>
+            <td>Devuelve todas las búsquedas existentes.</td>
+          </tr>
+          <tr>
+            <td>/Busquedas/Update/All</td>
+            <td>GET</td>
+            <td>Actualiza todas las búsquedas que necesitan ser actualizadas según su frecuencia.</td>
+          </tr>
+          <tr>
+            <td>/Users/Busquedas/Update/&lt;busqueda_p&gt;</td>
+            <td>POST</td>
+            <td>Actualiza productos de una búsqueda específica y devuelve nuevos productos.</td>
+          </tr>
+          <tr>
+            <td>/Users</td>
+            <td>GET</td>
+            <td>Devuelve todos los usuarios.</td>
+          </tr>
+          <tr>
+            <td>/Users/&lt;p_name&gt;</td>
+            <td>GET</td>
+            <td>Devuelve el ID del usuario dado su nombre.</td>
+          </tr>
+          <tr>
+            <td>/Busquedas/&lt;busqueda_p&gt;</td>
+            <td>GET</td>
+            <td>Devuelve todos los productos asociados a una búsqueda.</td>
+          </tr>
+          <tr>
+            <td>/Users/Busquedas/&lt;user_p&gt;</td>
+            <td>GET</td>
+            <td>Devuelve todas las búsquedas asociadas a un usuario.</td>
+          </tr>
+          <tr>
+            <td>/Buscar/&lt;producto_p&gt;</td>
+            <td>POST</td>
+            <td>Realiza una búsqueda de producto para un usuario con frecuencia y orden especificados.</td>
+          </tr>
+          <tr>
+            <td>/</td>
+            <td>GET</td>
+            <td>Página principal que renderiza el template index.html.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+  <script
+    src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+    integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+    crossorigin="anonymous"
+  ></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"
+    integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+"
+    crossorigin="anonymous"
+  ></script>
+</body>
 </html>

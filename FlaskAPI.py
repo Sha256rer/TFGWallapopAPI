@@ -1,14 +1,14 @@
 from operator import truediv
 
 import sqlalchemy
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, current_app
 from flask import jsonify
 from flask.cli import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine, String, Boolean
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
-
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from main import select_product, order_by, run_scraper
 from models import *
 from sqlalchemy import text
@@ -41,6 +41,7 @@ app.config[
     'SQLALCHEMY_DATABASE_URI'] = f"postgresql+psycopg2://{USER}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}?sslmode=require"
 dbalchemy = SQLAlchemy(app)
 
+
 @app.route("/Users/Updates", methods=['GET'])
 def get__users_to_notify():
     busquedas_users = dbalchemy.session.query(Busquedausuario).all()
@@ -69,27 +70,13 @@ def get__users_to_notify():
                 'id': b.id,
                 'userid': b.userid,
                 'busquedaid': b.busquedaid,
-                'last_notified': b.last_notified.isoformat(),
+                'last_notified': b.last_notified,
                 'frequency': b.frequency
             })
 
     return jsonify(busquedausuarios_a_notificar)
 
-
-@app.route("/Users/Updates/<busquedausuario_id>", methods=['GET'])
-def get_new_products_since_last_notified(busquedausuario_id):
-    busquedausuario = dbalchemy.session.query(Busquedausuario).filter(Busquedausuario.id == busquedausuario_id).first()
-    if not busquedausuario:
-        return "Error: Busquedausuario not found", 404
-
-    last_notified = busquedausuario.last_notified
-    busqueda_id = busquedausuario.busquedaid
-
-
-    productos = dbalchemy.session.query(Producto).join(Busquedaproducto).filter(
-        Busquedaproducto.busquedaid == busqueda_id,
-        Producto.created_at > last_notified
-    ).all()
+def process_user_and_products(busquedausuario, productos):
     user = dbalchemy.session.query(Usuario).filter(Usuario.id == busquedausuario.userid).first()
     busqueda = dbalchemy.session.query(Busqueda).filter(Busqueda.id == busquedausuario.busquedaid).first()
     result = {
@@ -108,9 +95,29 @@ def get_new_products_since_last_notified(busquedausuario_id):
     now = datetime.now(ZoneInfo("Europe/Madrid"))
     busquedausuario.last_notified = now
     dbalchemy.session.commit()
-    print(result)
     return jsonify(result)
 
+@app.route("/Users/Updates/<busquedausuario_id>", methods=['GET'])
+def get_new_products_since_last_notified(busquedausuario_id):
+    busquedausuario = dbalchemy.session.query(Busquedausuario).filter(Busquedausuario.id == busquedausuario_id).first()
+    if not busquedausuario:
+        return "Error: Busquedausuario not found", 404
+
+
+    last_notified = busquedausuario.last_notified
+    busqueda_id = busquedausuario.busquedaid
+
+    if busquedausuario.last_notified is not None:
+        productos = dbalchemy.session.query(Producto).join(Busquedaproducto).filter(
+            Busquedaproducto.busquedaid == busqueda_id,
+            Producto.created_at > last_notified
+        ).all()
+        return  process_user_and_products(busquedausuario, productos)
+    else:
+        productos = dbalchemy.session.query(Producto).join(Busquedaproducto).filter(
+            Busquedaproducto.busquedaid == busqueda_id
+        ).all()
+        return process_user_and_products(busquedausuario, productos)
 
 @app.route("/Testcon")
 def test_connection():
@@ -128,11 +135,63 @@ def get_allbusquedas():
     for b in busqueda:
         result.append({
             'ID': b.id,
-            'busqueda': b.Busqueda,
-            'media': b.Media
+            'busqueda': b.busqueda
         })
     return {"busquedas": result}
 
+
+@app.route("/Busquedas/Update/All", methods=['GET'])
+def get_busquedas_to_update():
+    now = datetime.now(ZoneInfo("Europe/Madrid"))
+    result = []
+
+    # Step 1: Preload busquedas using the main thread session
+    busquedas = dbalchemy.session.query(Busqueda).all()
+    SessionLocal = sessionmaker(bind=dbalchemy.engine)
+    def should_update(busqueda, now):
+        if busqueda.last_updated and busqueda.shortest_frequency:
+            diferencia = now - busqueda.last_updated
+            diferencia_en_minutos = int(diferencia.total_seconds() // 60)
+            if busqueda.shortest_frequency < diferencia_en_minutos:
+                return True, diferencia
+        return False, None
+
+    def thread_worker(busqueda_data):
+        with app.app_context():
+            session = SessionLocal()
+            try:
+                b = session.get(Busqueda, busqueda_data["id"])
+                if not b:
+                    return f"Busqueda ID {busqueda_data['id']} not found in thread"
+
+                update_productos(b.busqueda)
+                b.last_updated = datetime.now(ZoneInfo("Europe/Madrid"))
+                session.commit()
+                return f"Busqueda ID {b.id} - Time difference: {busqueda_data['diferencia']}"
+            except Exception as e:
+                session.rollback()
+                return f"Busqueda ID {busqueda_data['id']} - Error: {str(e)}"
+            finally:
+                session.close()
+
+    # Step 2: Prepare the data for threads as simple dicts (to avoid session issues)
+    tasks_data = []
+    for b in busquedas:
+        should, diferencia = should_update(b, now)
+        if should:
+            tasks_data.append({
+                "id": b.id,
+                "busqueda": b.busqueda,
+                "diferencia": diferencia
+            })
+
+    # Step 3: Run updates in parallel
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        futures = [executor.submit(thread_worker, task_data) for task_data in tasks_data]
+        for future in as_completed(futures):
+            result.append(future.result())
+
+    return jsonify(result)
 
 @app.route("/")
 def starting_page():
@@ -141,28 +200,9 @@ def starting_page():
 
 #Metodo que actualiza todas las busquedas utilizando la shortest_frequency, que es un campo calculado que vale
 #lo que vale la frecuencia de actualización del usuario cuya frecuencia de actualización para la busqueda sea menor
-@app.route("/Busquedas/Update/All", methods=['GET'])
-def get_busquedas_to_update():
-    last_updates = dbalchemy.session.query(Busqueda).all()
-    now = datetime.now(ZoneInfo("Europe/Madrid"))
-    result = []
-    for b in last_updates:
-        if b.last_updated and b.shortest_frequency:
-            # Diferencia entre el momento actual y la ultima actualización
-            diferencia = now - b.last_updated
-            diferencia_en_int = int(diferencia.total_seconds() // 60)
-            # Si la frecuencia de actualización mas corta es mas pequeña que la diferencia entre ahora y la última actualizacion
-            #Debemos actualizar de nuevo
-            print(diferencia_en_int)
-            print(b.shortest_frequency)
-            if b.shortest_frequency < diferencia_en_int:
-                update_productos(b.busqueda)
-                result.append(f"Busqueda ID {b.id} - Time difference: {diferencia}")
-        else:
-            print("last_updated o shortest_frequency son null")
-            b.last_updated = now
-    dbalchemy.session.commit()
-    return result
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from flask import jsonify
+
 
 #Funcion que actualiza una busqueda en concreto y nos devuelve los productos nuevos
 @app.route("/Users/Busquedas/Update/<busqueda_p>", methods=['POST'])
@@ -206,8 +246,7 @@ def get_allusers():
     for u in usuarios:
         result.append({
             'ID': u.id,
-            'nombre': u.name,  # Creo que quieres el nombre aquí, no 'busqueda'
-            'password': u.passw  # Ojo con exponer contraseñas, generalmente no se recomienda
+            'nombre': u.name
         })
     return {"usuarios": result}
 
@@ -252,9 +291,9 @@ def buscar_producto(producto_p):
     user_p = request.form.get("user", str)
     insert_user = get_user(user_p)
     if insert_user is None:
-        return "El usuario no existe"
+        return jsonify("El usuario no existe")
     elif frequency is None:
-        return "No estableciste frecuencia"
+        return jsonify("No estableciste frecuencia")
     else:
         print(insert_user)
         now = datetime.now(ZoneInfo("Europe/Madrid"))
@@ -276,19 +315,19 @@ def buscar_producto(producto_p):
             set_updated_busqueda(producto_p, now)
             asociar_busquedausuario(producto_p, insert_user, frequency)
             dbalchemy.session.commit()
-            return "Insertado con exito"
+            return jsonify("Insertado con exito")
         elif estado_busqueda ==  EstadoBusqueda.YA_ASOCIADA:
             #Actualizar productos cuando dividamos en funciones
-            return "Ya has asociado esta búsqueda"
+            return jsonify("Ya has asociado esta búsqueda")
         # Asociamos una busqueda ya existente al usuario
         elif estado_busqueda == EstadoBusqueda.NO_ASOCIADA:
             set_updated_busqueda(producto_p, now)
             asociar_busquedausuario(producto_p, insert_user, frequency)
             dbalchemy.session.commit()
-            return "Búsqueda asociada con éxito"
+            return jsonify("Búsqueda asociada con éxito")
 
 #Get user por nombre
-def get_user(user_p)-> Usuario:
+def get_user(user_p :str)-> Usuario:
     return dbalchemy.session.query(Usuario).filter(Usuario.name == user_p).first()
 
 #Encuentra si una busqueda existe o no, y también si esta vinculada a un usuario o no
