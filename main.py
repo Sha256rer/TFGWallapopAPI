@@ -16,6 +16,9 @@ from models import Busqueda, Producto
 def set_options():
     options = Options()
     options.add_argument("--headless=new")
+    options.add_argument('--disable-gpu')
+    options.add_argument('--single-process')
+    options.add_argument('--disable-extensions')
     options.binary_location = "/usr/bin/chromium"
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
