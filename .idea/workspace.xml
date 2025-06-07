@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="85252962-b33a-44eb-9d90-3ea82e9b4c34" name="Changes" comment="fixes de bugs, especialmente en busquedas, mayor seguridad a traves de Form">
-      <change beforePath="$PROJECT_DIR$/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/index.html" afterDir="false" />
-    </list>
+    <list default="true" id="85252962-b33a-44eb-9d90-3ea82e9b4c34" name="Changes" comment="new stuff to deploy" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -69,7 +67,15 @@
       <option name="project" value="LOCAL" />
       <updated>1748895880435</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="new stuff to deploy">
+      <option name="closed" value="true" />
+      <created>1749296817867</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1749296817867</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -85,6 +91,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="fixes de bugs, especialmente en busquedas, mayor seguridad a traves de Form" />
-    <option name="LAST_COMMIT_MESSAGE" value="fixes de bugs, especialmente en busquedas, mayor seguridad a traves de Form" />
+    <MESSAGE value="new stuff to deploy" />
+    <option name="LAST_COMMIT_MESSAGE" value="new stuff to deploy" />
   </component>
 </project>
