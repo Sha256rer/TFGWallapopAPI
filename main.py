@@ -16,8 +16,9 @@ from models import Busqueda, Producto
 def set_options():
     options = Options()
     options.add_argument("--headless=new")
-    options.add_argument("--window-size=1920,1080")
-    options.add_argument("start-maximized")
+    options.binary_location = "/usr/bin/chromium"
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
     prefs = {"profile.managed_default_content_settings.images": 2}
     options.add_experimental_option("prefs", prefs)
     return options
