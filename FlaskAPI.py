@@ -189,7 +189,7 @@ def get_busquedas_to_update():
             })
 
     # Step 3: Run updates in parallel
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    with ThreadPoolExecutor(max_workers=1) as executor:
         futures = [executor.submit(thread_worker, task_data) for task_data in tasks_data]
         for future in as_completed(futures):
             result.append(future.result())
